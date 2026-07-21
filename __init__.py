@@ -12,6 +12,7 @@ from esphome.const import (
     CONF_RECEIVE_TIMEOUT,
 )
 from esphome.core import CORE
+from esphome.components import text_sensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ CONF_CUSTOM_PATTERNS = "custom_patterns"
 CONF_SKIP_CRC = "skip_crc"
 CONF_DEFAULT_OBIS = "default_obis"
 CONF_PROVIDER = "provider"
+CONF_SOURCE_SENSOR = "source_sensor"
 
 dlms_meter_component_ns = cg.esphome_ns.namespace("dlms_meter")
 DlmsMeterComponent = dlms_meter_component_ns.class_(
@@ -148,6 +150,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(
                 CONF_RECEIVE_TIMEOUT, default="1000ms"
             ): cv.positive_time_period_milliseconds,
+            cv.Optional(CONF_SOURCE_SENSOR): cv.use_id(text_sensor.TextSensor),
         }
     )
     .extend(uart.UART_DEVICE_SCHEMA)
@@ -256,3 +259,7 @@ async def to_code(config):
         esp32.add_idf_component(name="esphome/dlms_parser", ref="1.1.0")
     else:
         cg.add_library("esphome/dlms_parser", "1.1.0")
+
+    if config.get(CONF_SOURCE_SENSOR):
+        source_sensor = await cg.get_variable(config[CONF_SOURCE_SENSOR])
+        cg.add(var.set_source_sensor(source_sensor))

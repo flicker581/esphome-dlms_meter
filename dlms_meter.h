@@ -118,6 +118,11 @@ class DlmsMeterComponent : public Component, public uart::UARTDevice {
 #ifdef USE_BINARY_SENSOR
   void register_binary_sensor(const std::string &obis_code, binary_sensor::BinarySensor *sensor);
 #endif
+  esphome::text_sensor::TextSensor *source_sensor{nullptr};
+
+  void set_source_sensor(esphome::text_sensor::TextSensor *src) { 
+    this->source_sensor = src; 
+  }
 
  protected:
   void read_rx_buffer_();
@@ -146,6 +151,8 @@ class DlmsMeterComponent : public Component, public uart::UARTDevice {
 #ifdef USE_BINARY_SENSOR
   StaticVector<BinarySensorItem, DLMS_MAX_BINARY_SENSORS> binary_sensors_;
 #endif
+
+  void process_external_frame_(const std::string &raw_string);
 };
 
 }  // namespace esphome::dlms_meter

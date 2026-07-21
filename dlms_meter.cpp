@@ -82,7 +82,19 @@ DlmsMeterComponent::DlmsMeterComponent(uint32_t receive_timeout_ms, bool skip_cr
   }
 }
 
-void DlmsMeterComponent::setup() { this->flush_rx_buffer_(); }
+void DlmsMeterComponent::setup() { 
+  this->flush_rx_buffer_(); 
+
+  if (this->source_sensor == nullptr) {
+    ESP_LOGE("custom", "Source sensor is not set!");
+    return;
+  }
+
+  this->source_sensor->add_on_state_callback([this](const std::string &value) {
+    this->process_external_frame_(value);
+  });
+
+}
 
 void DlmsMeterComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "DLMS Meter:");
@@ -232,5 +244,15 @@ void DlmsMeterComponent::register_binary_sensor(const std::string &obis_code, bi
   this->binary_sensors_.push_back({obis_code, sensor});
 }
 #endif
+
+void DlmsMeterComponent::process_external_frame_(const std::string &raw_string) {
+  ESP_LOGD("dlms_decode", "Got raw string");
+
+  auto callback = [this](const char *obis_code, float float_val, const char *str_val, bool is_numeric) {
+    this->on_data_(obis_code, float_val, str_val, is_numeric);
+  };
+  std::vector<uint8_t> mutable_buffer(raw_string.begin(), raw_string.end());
+  this->parser_.parse({mutable_buffer.data(), mutable_buffer.size()}, callback);
+}
 
 }  // namespace esphome::dlms_meter
