@@ -246,12 +246,23 @@ void DlmsMeterComponent::register_binary_sensor(const std::string &obis_code, bi
 #endif
 
 void DlmsMeterComponent::process_external_frame_(const std::string &raw_string) {
-  ESP_LOGD("dlms_decode", "Got raw string");
+  ESP_LOGD("dlms_decode", "Got raw string len=%d", raw_string.size());
 
   auto callback = [this](const char *obis_code, float float_val, const char *str_val, bool is_numeric) {
     this->on_data_(obis_code, float_val, str_val, is_numeric);
   };
   std::vector<uint8_t> mutable_buffer(raw_string.begin(), raw_string.end());
+  ESP_LOGD("dlms_decode", "mutable buffer size: %d", mutable_buffer.size());
+  std::string hex_str;
+  hex_str.reserve(mutable_buffer.size() * 2);
+
+  for (uint8_t byte : mutable_buffer) {
+    char buf[3];
+    snprintf(buf, sizeof(buf), "%02x", byte);
+    hex_str.append(buf);
+  }
+
+  ESP_LOGD("dlms_decode", "content: %s", hex_str.c_str());
   this->parser_.parse({mutable_buffer.data(), mutable_buffer.size()}, callback);
 }
 
